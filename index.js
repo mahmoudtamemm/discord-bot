@@ -1,74 +1,87 @@
-require('dotenv').config();
+const { Client, GatewayIntentBits, PermissionsBitField } = require('discord.js');
 
-const { Client, GatewayIntentBits, EmbedBuilder } = require('discord.js');
+// ===== CONFIG =====
+const TOKEN = 'MTUwNzExMDE4MTAxMDU0MjczMw.GMrVCN.zit79u_iCX7XyrA4aJcLWzUAQKRglGYkNZd2ho';
 
+const ADMIN_ROLE_ID = '1507041644552392725';
+const WELCOME_CHANNEL_ID = '1507040612090908885';
+
+// ===== CLIENT =====
 const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent,
-    GatewayIntentBits.GuildMembers
-  ]
+    intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMembers,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent
+    ]
 });
 
-// تخزين AFK
-const afkUsers = new Map();
-
-// تشغيل البوت
-client.once('clientReady', () => {
-  console.log(`Logged in as ${client.user.tag}`);
+// ===== READY EVENT =====
+client.once('ready', () => {
+    console.log(`Logged in as ${client.user.tag}!`);
 });
 
-// أمر ping
-client.on('messageCreate', message => {
-
-  if (message.author.bot) return;
-
-  if (message.content === '!ping') {
-    message.reply('Pong! 🏓');
-  }
-
-  // تشغيل AFK
-  if (message.content.startsWith('!afk')) {
-
-    const reason = message.content.split(' ').slice(1).join(' ') || 'بدون سبب';
-
-    afkUsers.set(message.author.id, reason);
-
-    message.reply(`💤 تم تفعيل AFK: ${reason}`);
-    return;
-  }
-
-  // إلغاء AFK لو رجع يكتب
-  if (afkUsers.has(message.author.id)) {
-    afkUsers.delete(message.author.id);
-    message.reply('👋 تم إلغاء AFK، أهلاً بعودتك!');
-  }
-
-  // تنبيه لو أحد منشن شخص AFK
-  const mentioned = message.mentions.users.first();
-  if (mentioned && afkUsers.has(mentioned.id)) {
-    const reason = afkUsers.get(mentioned.id);
-    message.reply(`💤 هذا الشخص AFK: ${reason}`);
-  }
-
-});
-
-// ترحيب الأعضاء
+// ===== WELCOME MESSAGE =====
 client.on('guildMemberAdd', member => {
+    const channel = member.guild.channels.cache.get(WELCOME_CHANNEL_ID);
+    if (!channel) return;
 
-  const channel = member.guild.channels.cache.get('1507040612090908885');
+    const welcomeMessage = `
+💎 𝓣𝓗𝓔 𝓛𝓔𝓖𝓔𝓝𝓓 💎
+نورتنا يا غالي 💙
+<@${member.id}>
+ان شاء الله تكون مبسوط معنا! 💎
+`;
 
-  if (!channel) return;
-
-  const embed = new EmbedBuilder()
-    .setColor('Blue')
-    .setTitle('👋 عضو جديد!')
-    .setDescription(`أهلاً بك ${member} في السيرفر 💙`)
-    .setThumbnail(member.user.displayAvatarURL())
-    .setTimestamp();
-
-  channel.send({ embeds: [embed] });
+    channel.send({ content: welcomeMessage });
 });
 
-client.login(process.env.TOKEN);
+// ===== ADMIN COMMANDS =====
+client.on('messageCreate', async (message) => {
+    if (message.author.bot) return;
+    if (!message.guild) return;
+
+    const member = message.member;
+    if (!member) return;
+
+    // check admin role
+    if (!member.roles.cache.has(ADMIN_ROLE_ID)) return;
+
+    const args = message.content.trim().split(/\s+/);
+    const command = args[0].toLowerCase();
+    const target = message.mentions.members.first();
+
+    // ===== BAN =====
+    if (command === '#ban') {
+        if (!target) return message.reply('🚫 منشن العضو الذي تريد حظره!');
+
+        await target.ban({ reason: `By ${message.author.tag}` });
+        message.channel.send(`✅ تم حظر ${target.user.tag}`);
+    }
+
+    // ===== KICK =====
+    if (command === '#kick') {
+        if (!target) return message.reply('🚫 منشن العضو الذي تريد طرده!');
+
+        await target.kick(`By ${message.author.tag}`);
+        message.channel.send(`✅ تم طرد ${target.user.tag}`);
+    }
+
+    // ===== CLEAR =====
+    if (command === '#clear') {
+        try {
+            const fetched = await message.channel.messages.fetch({ limit: 100 });
+            await message.channel.bulkDelete(fetched, true);
+
+            const msg = await message.channel.send('✅ تم مسح الرسائل!');
+            setTimeout(() => msg.delete().catch(() => {}), 3000);
+
+        } catch (err) {
+            console.error(err);
+            message.channel.send('🚫 حدث خطأ أثناء المسح!');
+        }
+    }
+});
+
+// ===== LOGIN =====
+client.login(TOKEN);
