@@ -1,7 +1,7 @@
 const { Client, GatewayIntentBits, PermissionsBitField } = require('discord.js');
 
 // ===== CONFIG =====
-const TOKEN = 'MTUwNzExMDE4MTAxMDU0MjczMw.GLuZ8B.d2CGn2_knd6KQCvUgz0sj2DuDxHhM3HMpYsX7A';
+const TOKEN = 'MTUwNzExMDE4MTAxMDU0MjczMw.Ghc_84.ank30Tu6zqpBJZedvQXeXOZaXyl5hjBKIfMSJw';
 
 const ADMIN_ROLE_ID = '1507041644552392725';
 const WELCOME_CHANNEL_ID = '1507040612090908885';
